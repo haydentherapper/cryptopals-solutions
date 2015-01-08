@@ -11,11 +11,17 @@ def c2():
     input = ('1c0111001f010100061a024b53535009181c', 
     '686974207468652062756c6c277320657965')
     output = '746865206b696420646f6e277420706c6179'    
-    b_input = list(map(binascii.unhexlify, input))
+    b_input = list(map(hex2b, input))
     c2_output = fixed_xor(b_input[0], b_input[1])
-    assert(binascii.hexlify(c2_output).decode() == output)
+    assert(b2hex(c2_output).decode() == output)
     print("C2 passed!")
+
+def c3():
+    input = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'    
+    print(byte_xor_cipher(hex2b(input)).decode())
     
 if __name__ == '__main__':
     c1()
     c2()
+    c3()
+   
