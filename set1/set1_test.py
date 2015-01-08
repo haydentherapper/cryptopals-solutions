@@ -18,10 +18,21 @@ def c2():
 
 def c3():
     input = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'    
-    print(byte_xor_cipher(hex2b(input)).decode())
+    output = "Cooking MC's like a pound of bacon"
+    c3_output = byte_xor_cipher(hex2b(input)).decode()
+    assert(output == c3_output)
+    print("C3 passed!")
+
+def c4():
+    output = "Now that the party is jumping\n"
+    s = detect_xor()
+    c4_output = byte_xor_cipher(hex2b(s)).decode()    
+    assert(output == c4_output)
+    print("C4 passed!")
     
 if __name__ == '__main__':
     c1()
     c2()
     c3()
-   
+    c4()
+    

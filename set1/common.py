@@ -50,25 +50,35 @@ def get_freq(letter):
     }
     return letter_freqs[letter]
 
-def score(input):
+def score(i):
     tot_score = 0
-    input = input.upper()
+    input = i.upper()
     for c in string.ascii_uppercase:
-        if input.count(c.encode() != 0):
-            l_score = abs((input.count(c.encode()) / len(input)) - get_freq(c))
-            tot_score += l_score
+        l_score = abs((float(input.count(c.encode()) / len(input)))-get_freq(c))
+        tot_score += l_score
     
-    percent_letters = list(filter(lambda x: ord(b'A') <= x <= ord('Z'), 
-    input))
-    return tot_score + (1 - float(len(percent_letters) / len(input)))
+    percent_letters = list(filter(lambda x: ord(b'A') <= x <= ord('Z') 
+    or x == ord(' '), input))
+    return (1 - tot_score) + float(len(percent_letters) / len(input))
 
 def byte_xor_cipher(b_str):
-    min_score = sys.maxsize
+    max_score = 0
     message = ''
     for c in range(256):
         xor_str = chr(c).encode() * len(b_str)
         dec = fixed_xor(b_str, xor_str)
-        if score(dec) < min_score:
-            min_score = score(dec)
+        if score(dec) > max_score:
+            max_score = score(dec)
             message = dec
+    return message
+    
+def detect_xor():
+    max_score = 0
+    message = ''
+    for line in open('c4text.txt'):
+        line = line.strip()
+        dec = byte_xor_cipher(hex2b(line))
+        if score(dec) > max_score:
+            max_score = score(dec)
+            message = line
     return message
