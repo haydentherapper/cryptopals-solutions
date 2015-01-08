@@ -82,3 +82,8 @@ def detect_xor():
             max_score = score(dec)
             message = line
     return message
+
+def repeating_key_xor(pt, key):
+    n = len(key)
+    chunks = [pt[i:i+n] for i in range(0, len(pt), n)]
+    return b''.join([fixed_xor(chunk, key) for chunk in chunks])
