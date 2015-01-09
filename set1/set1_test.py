@@ -24,9 +24,11 @@ def c3():
     print("C3 passed!\n")
 
 def c4():
+    input = [line.strip() for line in open('c4text.txt', 'r')]
     output = "Now that the party is jumping\n"
-    s = detect_xor()
-    c4_output = byte_xor_cipher(hex2b(s)).decode()    
+
+    xor_enc_s = detect_xor(input)
+    c4_output = byte_xor_cipher(hex2b(xor_enc_s)).decode()    
     assert(output == c4_output)
     print("C4 passed!\n")
 
@@ -60,10 +62,10 @@ def c7():
     print("C7 passed!\n")
     
 def c8():
-    lines = [line.strip() for line in open('c8text.txt', 'r')]
+    input = [line.strip() for line in open('c8text.txt', 'r')]
     
     print("Printing the ECB encrypted text")
-    print(find_repeated_ecb(lines))
+    print(find_repeated_ecb(input))
     print("C8 passed!\n")
     
 if __name__ == '__main__':
