@@ -39,10 +39,20 @@ def c5():
     assert(b2hex(c5_output) == output.encode())
     print("C5 passed!")
     
+def c6():
+    with open('c6text.txt', 'r') as file:
+        data = file.read()
+    input = hex2b(b642hex(data))
+    output = "Terminator X: Bring the noise"    
+    
+    c6_output = find_repeating_xor_key(input)
+    assert(output == c6_output)    
+    print("C6 passed!")
+
 if __name__ == '__main__':
     c1()
     c2()
     c3()
-#    c4()
+    c4()
     c5()
-    
+    c6()
