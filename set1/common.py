@@ -1,6 +1,7 @@
 import binascii
 import base64
 import string, sys, math, itertools
+from Crypto.Cipher import AES
 
 def hex2b(hex):
     return binascii.unhexlify(hex)
@@ -104,7 +105,6 @@ def find_repeating_xor_key(b_str):
     for keysize in range(2,41):
         chunks = [b_str[i*keysize:(i+1)*keysize] for i in range(4)]
         h_dst = 0
-        import itertools
         chunks_perm = list(itertools.permutations(chunks, 2))
         h_dst += sum(float(hamming_distance(chunk[0], chunk[1]) / 
 keysize) for chunk in chunks_perm)
@@ -120,3 +120,13 @@ keysize) for chunk in chunks_perm)
         final_key += byte_xor_cipher_with_key(block)[1]
     return final_key
 
+def dec_aes(b_str, key):
+    aes = AES.new(key, AES.MODE_ECB)
+    return aes.decrypt(b_str)
+
+def find_repeated_ecb(b_str_list):
+    for line in b_str_list:
+        data = hex2b(line)
+        blocks = [data[i:i+16] for i in range(0, len(data), 16)]
+        if len(blocks) != len(set(blocks)):
+            return line    

@@ -5,7 +5,7 @@ def c1():
     input = '49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d'
     output = 'SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t'
     assert(hex2b64(input) == output)
-    print("C1 passed!")
+    print("C1 passed!\n")
 
 def c2():
     input = ('1c0111001f010100061a024b53535009181c', 
@@ -14,21 +14,21 @@ def c2():
     b_input = list(map(hex2b, input))
     c2_output = fixed_xor(b_input[0], b_input[1])
     assert(b2hex(c2_output).decode() == output)
-    print("C2 passed!")
+    print("C2 passed!\n")
 
 def c3():
     input = '1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736'    
     output = "Cooking MC's like a pound of bacon"
     c3_output = byte_xor_cipher(hex2b(input)).decode()
     assert(output == c3_output)
-    print("C3 passed!")
+    print("C3 passed!\n")
 
 def c4():
     output = "Now that the party is jumping\n"
     s = detect_xor()
     c4_output = byte_xor_cipher(hex2b(s)).decode()    
     assert(output == c4_output)
-    print("C4 passed!")
+    print("C4 passed!\n")
 
 def c5():
     input = "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal"
@@ -37,7 +37,7 @@ def c5():
     key = "ICE"
     c5_output = repeating_key_xor(input.encode(), key.encode())
     assert(b2hex(c5_output) == output.encode())
-    print("C5 passed!")
+    print("C5 passed!\n")
     
 def c6():
     with open('c6text.txt', 'r') as file:
@@ -47,8 +47,25 @@ def c6():
     
     c6_output = find_repeating_xor_key(input)
     assert(output == c6_output)    
-    print("C6 passed!")
+    print("C6 passed!\n")
 
+def c7():
+    with open('c7text.txt', 'r') as file:
+        data = file.read()
+    input = hex2b(b642hex(data))
+    key = "YELLOW SUBMARINE"
+
+    print("Printing the decrypted text")
+    print(dec_aes(input, key))
+    print("C7 passed!\n")
+    
+def c8():
+    lines = [line.strip() for line in open('c8text.txt', 'r')]
+    
+    print("Printing the ECB encrypted text")
+    print(find_repeated_ecb(lines))
+    print("C8 passed!\n")
+    
 if __name__ == '__main__':
     c1()
     c2()
@@ -56,3 +73,5 @@ if __name__ == '__main__':
     c4()
     c5()
     c6()
+    c7()
+    c8()
