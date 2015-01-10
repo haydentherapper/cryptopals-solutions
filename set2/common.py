@@ -237,9 +237,9 @@ def ecb_byte_brute_decryption(enc_func, key):
         mapping = {}
         for i in range(256): # Try all possibilities
             v = my_str + dec_str + bytes([i]) 
-            k = enc_AES_ECB_pad(v, key)
+            k = enc_func(v, key)
             mapping[k] = v # Map the possible values to the unique enc
-        enc = enc_AES_ECB_pad(my_str + secret, key)
+        enc = enc_func(my_str + secret, key)
         match = mapping[enc[:block_num*block_size]]
         dec_str += bytes([match[-1]])
 
@@ -256,4 +256,112 @@ def ecb_byte_brute_decryption(enc_func, key):
 
     print(dec_str)
 
+def key_value_parser(input):
+     return dict([i.split("=") if i.count('=') > 0 else [i, ''] 
+        for i in input.split("&")])
 
+def profile_for(email):
+    email = email.replace('=','').replace('&','')
+    uid = 10
+    role = 'user'
+    return 'email=' + email + '&uid=' + str(uid) + '&role=' + role
+
+def enc_user_profile(email, key):
+    return enc_AES_ECB_pad(profile_for(email).encode(), key)
+
+def dec_user_profile(b_str, key):
+    return key_value_parser(dec_AES_ECB(b_str, key).decode())
+
+def ecb_cut_and_paste():
+    # |----------------|----------------|----------------|
+    # |email=AAAAAAAAAA|AAA&uid=10&role=|user
+    #                  |email=AAAAAAAAAA|admin&uid=10&rol|
+    key = gen_AES_key()
+    # First encryption generates user role
+    block1_pad = 'A' * (16 - len("email="))
+    block2_pad = 'A' * (16 - len("&uid=10&role="))
+    email = block1_pad + block2_pad
+    enc_str1 = enc_user_profile(email, key)
+
+    # Second encryption generates admin role
+    email = block1_pad + 'admin'
+    enc_str2 = enc_user_profile(email, key)
+
+    # Cut and paste 1st two blocks from 1 and 2nd block from 2
+    cut_and_paste = enc_str1[:32] + enc_str2[16:32]
+
+    return dec_user_profile(cut_and_paste, key)
+
+def ecb_byte_brute_decryption(enc_func, key, prefix):
+    secret = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+    secret = hex2b(b642hex(secret))
+
+    # Determine block size
+    block_size = 0
+    for i in range(1, 100):
+        cur = len(enc_func(b'A' * i, key))
+        next = len(enc_func(b'A' * (i+1), key))
+        if (cur != next):
+            block_size = next - cur
+            print("Block size: " + str(block_size))
+            break
+
+    # Determine function type
+    if detect_ECB_or_CBC(enc_func) == "ECB":
+        print("ECB mode detected")
+
+    # Determine offset with random prefix
+    # Taking BLOCK_SIZE bytes and shifting them down one-by-one,
+    # we are guarenteed to find a block with one of these chunks.
+    # We then know the offset, and we know where the block is,
+    # so we cut off the prefix and offset so we start with 'A'
+    lookup = {}
+    block = bytes([i for i in range(block_size)])
+    for i in range(block_size):
+        enc = enc_func(block, key)
+        lookup[enc] = i
+        block = block[1:] + bytes([block[0]]) # Shift 1st byte to the end
+    
+    cipher = enc_func(prefix + block + block + secret, key)
+    c_blocks = [cipher[i:i+block_size] \
+                for i in range(0, len(cipher), block_size)]
+    padding_size = 0
+    truncate_block_num = 0
+    for i in range(len(c_blocks)):
+        for k in lookup:
+            if c_blocks[i] == k:
+                padding_size = lookup[k] # Save the length of the pad
+                truncate_block_num = i
+                break
+
+    # Add padding and index to truncate at
+    new_prefix = b'Q' * padding_size
+    truncation = truncate_block_num*block_size
+    if padding_size % block_size == 0:
+        truncation -= block_size # Truncate one less block
+    
+    dec_str = b''
+    my_str = b'A' * (block_size - 1)
+    block_num = 1 # Keeps track of how much of the ciphertext to match
+    while(True): 
+        mapping = {}
+        for i in range(256): # Try all possibilities
+            v = my_str + dec_str + bytes([i]) 
+            k = enc_func(prefix + new_prefix + v, key)[truncation:]
+            mapping[k] = v # Map the possible values to the unique enc
+        enc = enc_func(prefix + new_prefix + my_str + secret, key)[truncation:]
+        match = mapping[enc[:block_num*block_size]]
+        dec_str += bytes([match[-1]])
+
+        # We've fed the entire string to our decryptor
+        if len(enc) == (block_num * block_size):
+            break
+
+        # Update
+        if len(my_str) == 0:
+            my_str = b'A' * (block_size - 1) # Pad the input again
+            block_num += 1
+        else:
+            my_str = my_str[1:] # Remove the first letter
+
+    print(dec_str)
