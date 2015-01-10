@@ -135,6 +135,17 @@ def pkcs7_padding(b_str, pad_len):
     return b_str + \
         (chr(pad_len - len(b_str)) * (pad_len - len(b_str))).encode()
 
+def pkcs7_rm_padding(b_str):
+    last_byte = b_str[-1]
+    if (last_byte <= len(b_str)):
+        padding = b_str[-last_byte:]
+        if (len(set(padding)) == 1):
+            return b_str[:-last_byte]
+        else:
+            raise Exception("Bad padding")
+    else:
+        raise Exception("Incorrect final padding byte")
+
 def rm_pad(b_str):
     last_byte = b_str[-1]
     if (last_byte <= len(b_str)):
