@@ -118,8 +118,8 @@ def dec_aes(b_str, key):
     return aes.decrypt(b_str)
 
 def find_repeated_ecb(b_str_list):
-    for line in b_str_list:
-        data = hex2b(line)
+    for data in b_str_list:
         blocks = [data[i:i+16] for i in range(0, len(data), 16)]
         if len(blocks) != len(set(blocks)):
-            return line    
+            return data
+

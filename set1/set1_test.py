@@ -62,7 +62,7 @@ def c7():
     print("C7 passed!\n")
     
 def c8():
-    input = [line.strip() for line in open('c8text.txt', 'r')]
+    input = [hex2b(line.strip()) for line in open('c8text.txt', 'r')]
     
     print("Printing the ECB encrypted text")
     print(find_repeated_ecb(input))
