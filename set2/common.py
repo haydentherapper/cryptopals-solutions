@@ -162,8 +162,6 @@ def enc_AES_CBC(plaintext, key, iv=bytes(16)):
     ciphertext = b''
     for i in range(len(blocks)):
         block = blocks[i]
-        if len(block) < 16:
-            block = pkcs7_padding(block, 16)
         if i == 0:
             ciphertext += enc_AES_ECB(fixed_xor(block, iv), key) 
         else:
@@ -178,9 +176,6 @@ def dec_AES_CBC(ciphertext, key, iv=bytes(16)):
         block = blocks[i]
         if i == 0:
             plaintext += fixed_xor(dec_AES_ECB(block, key), iv)
-        elif i == (len(blocks) - 1):
-            pt = rm_pad(fixed_xor(dec_AES_ECB(block, key), blocks[i-1]))
-            plaintext += pt
         else:
             plaintext += fixed_xor(dec_AES_ECB(block, key), blocks[i-1])
     return plaintext
@@ -376,3 +371,47 @@ def ecb_byte_brute_decryption(enc_func, key, prefix):
             my_str = my_str[1:] # Remove the first letter
 
     print(dec_str)
+
+def take_userdata(input):
+    input = input.replace(';', '').replace('=', '')
+    input = ("comment1=cooking%20MCs;userdata=" + \
+            input + \
+            ";comment2=%20like%20a%20pound%20of%20bacon").encode()
+    key = gen_AES_key()
+
+    blocks = [input[i:i+16] for i in range(0, len(input), 16)]
+    blocks[-1] = pkcs7_padding(blocks[-1], 16)
+    input = b''.join(blocks)
+
+    return (enc_AES_CBC(input, key), key)
+
+def dec_userdata(input, key):
+    pt = dec_AES_CBC(input, key).decode(encoding='ISO-8859-1')
+    mapping = dict([i.split("=") if i.count('=') > 0 else [i, ''] 
+                    for i in pt.split(";")])
+    return 'admin' in mapping and mapping['admin'] == 'true'
+
+def cbc_bitflip(injection_string):
+    # Output will contain ";admin=true;"
+    some_output = "comment1=cooking%20MCs;userdata=".encode()
+    second_output_block = some_output[16:]
+
+    ciphertext, key = take_userdata('')
+    ciphertext = bytearray(ciphertext) # To make it mutable
+
+    # For any byte in the ith cipherblock, one can change a byte in
+    # the (i+1)th cipherblock at the same index. 
+    # plaintext[i] = X
+    # ciphertext[i] = Y
+    # desired_chr = Z
+    # We know when decrypted, the byte will be X. Therefore, we XOR
+    # to the ciphertext X to make this byte 0. We then XOR the
+    # desired_chr Z, so Y = Y ^ X ^ Z, which results in Z when decrypted.
+    for i, ch in enumerate(injection_string):
+        ciphertext[i] = ciphertext[i] ^ \
+                        second_output_block[i] ^ \
+                        injection_string[i]
+    ciphertext = bytes(ciphertext)
+    print(dec_userdata(ciphertext, key))
+    return (ciphertext, key)
+
