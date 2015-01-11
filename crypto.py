@@ -131,7 +131,7 @@ def find_repeated_ECB(b_str_list):
 
 # SET 2
 
-def pkcs7_padding(b_str, pad_len):
+def pkcs7_padding(b_str, pad_len=16):
     return b_str + \
         (chr(pad_len - len(b_str)) * (pad_len - len(b_str))).encode()
 
@@ -145,17 +145,6 @@ def pkcs7_rm_padding(b_str):
             raise Exception("Bad padding")
     else:
         raise Exception("Incorrect final padding byte")
-
-def rm_pad(b_str):
-    last_byte = b_str[-1]
-    if (last_byte <= len(b_str)):
-        padding = b_str[-last_byte:]
-        if (len(set(padding)) == 1):
-            return b_str[:-last_byte]
-        else:
-            return b_str
-    else:
-        return b_str
 
 def enc_AES_CBC(plaintext, key, iv=bytes(16)):
     blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
@@ -191,7 +180,7 @@ def enc_ECB_or_CBC(plaintext):
 
     # Pad for ECB
     blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
-    blocks[-1] = pkcs7_padding(blocks[-1], 16)
+    blocks[-1] = pkcs7_padding(blocks[-1])
     plaintext = b''.join(blocks)
 
     if randint(0,1) == 0:
@@ -203,17 +192,20 @@ def enc_ECB_or_CBC(plaintext):
 
 def detect_ECB_or_CBC(enc_func):
     payload = b'A' * 100
+    blocks = [payload[i:i+16] for i in range(0, len(payload), 16)]
+    blocks[-1] = pkcs7_padding(blocks[-1])
+    payload = b''.join(blocks)
+
     key = gen_AES_key()
     if find_repeated_ECB([enc_func(payload, key)]) is None:
         return "CBC"
     else:
         return "ECB"
 
-
 def enc_AES_ECB_pad(plaintext, key):
     # Pad for ECB
     blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
-    blocks[-1] = pkcs7_padding(blocks[-1], 16)
+    blocks[-1] = pkcs7_padding(blocks[-1])
     plaintext = b''.join(blocks)
 
     return enc_AES_ECB(plaintext, key)
@@ -260,7 +252,7 @@ def ecb_byte_brute_decryption(enc_func, key):
         else:
             my_str = my_str[1:] # Remove the first letter
 
-    print(dec_str)
+    return dec_str
 
 def key_value_parser(input):
      return dict([i.split("=") if i.count('=') > 0 else [i, ''] 
@@ -298,7 +290,7 @@ def ecb_cut_and_paste():
 
     return dec_user_profile(cut_and_paste, key)
 
-def ecb_byte_brute_decryption(enc_func, key, prefix):
+def ecb_byte_brute_decryption_hard(enc_func, key, prefix):
     secret = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
     secret = hex2b(b642hex(secret))
 
@@ -380,7 +372,7 @@ def take_userdata(input):
     key = gen_AES_key()
 
     blocks = [input[i:i+16] for i in range(0, len(input), 16)]
-    blocks[-1] = pkcs7_padding(blocks[-1], 16)
+    blocks[-1] = pkcs7_padding(blocks[-1])
     input = b''.join(blocks)
 
     return (enc_AES_CBC(input, key), key)
