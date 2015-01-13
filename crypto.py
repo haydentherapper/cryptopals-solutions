@@ -266,7 +266,7 @@ def profile_for(email):
 
 def enc_user_profile(email, key):
     return enc_AES_ECB_pad(profile_for(email).encode(), key)
-
+  
 def dec_user_profile(b_str, key):
     return key_value_parser(dec_AES_ECB(b_str, key).decode())
 
@@ -290,6 +290,9 @@ def ecb_cut_and_paste():
 
     return dec_user_profile(cut_and_paste, key)
 
+# TODO: Possible second method: Continually add bytes until
+# a repeated segment is found, so we then know alignment and
+# know how many bytes need to be added for alignment
 def ecb_byte_brute_decryption_hard(enc_func, key, prefix):
     secret = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
     secret = hex2b(b642hex(secret))
@@ -362,7 +365,7 @@ def ecb_byte_brute_decryption_hard(enc_func, key, prefix):
         else:
             my_str = my_str[1:] # Remove the first letter
 
-    print(dec_str)
+    return dec_str
 
 def take_userdata(input):
     input = input.replace(';', '').replace('=', '')
@@ -404,6 +407,5 @@ def cbc_bitflip(injection_string):
                         second_output_block[i] ^ \
                         injection_string[i]
     ciphertext = bytes(ciphertext)
-    print(dec_userdata(ciphertext, key))
     return (ciphertext, key)
 

@@ -39,10 +39,68 @@ def c12():
 	assert(output == secret)
 	print("C12 passed!\n")
 
+def c13():
+	assert(profile_for('foo&=') == profile_for('foo'))
+	output = ecb_cut_and_paste()
+	assert(output['role'] == 'admin')
+	print("C13 passed!\n")
+
+def c14():
+	secret = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"
+	secret = hex2b(b642hex(secret))
+	enc_func = enc_AES_ECB_pad
+	key = gen_AES_key()
+	print("Testing a prefix of block_size")
+	prefix = b'A' * 16
+	output = ecb_byte_brute_decryption_hard(enc_func, key, prefix)
+	assert(output == secret)
+
+	print("Testing a prefix of <block_size")
+	prefix = b'A' * 5
+	output = ecb_byte_brute_decryption_hard(enc_func, key, prefix)
+	assert(output == secret)
+
+	print("Testing a prefix of >block_size")
+	prefix = b'A' * 35
+	output = ecb_byte_brute_decryption_hard(enc_func, key, prefix)
+	assert(output == secret)
+	print("C14 passed!\n")
+
+def c15():
+	input = "ICE ICE BABY\x04\x04\x04\x04".encode()
+	output = "ICE ICE BABY"
+	c15_output = pkcs7_rm_padding(input)
+	assert(output == c15_output.decode())
+
+	input = "ICE ICE BABY\x05\x05\x05\x05".encode()
+	try:
+		pkcs7_rm_padding(input)
+	except Exception:
+		print("Caught exception for wrong number of bytes")
+
+	input = "ICE ICE BABY\x01\x02\x03\x04".encode()
+	try:
+		pkcs7_rm_padding(input)
+	except Exception:
+		print("Caught exception for wrong padding bytes")
+	print("C15 passed!\n")
+
+def c16():
+	injection_string = ";admin=true;".encode()
+	ciphertext, key = cbc_bitflip(injection_string)
+	result = dec_userdata(ciphertext, key)
+	print("Confirming \"admin=true\" is in the plaintext")
+	assert(result)
+	print("C16 passed!\n")
+
 if __name__ == '__main__':
     c9()
     c10()
     c11()
     c12()
+    c13()
+    c14()
+    c15()
+    c16()
 
 
