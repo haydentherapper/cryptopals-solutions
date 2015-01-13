@@ -409,3 +409,57 @@ def cbc_bitflip(injection_string):
     ciphertext = bytes(ciphertext)
     return (ciphertext, key)
 
+padding_oracle_key = gen_AES_key()
+
+def enc_AES_CBC_oracle(plaintext):
+    blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
+    blocks[-1] = pkcs7_padding(blocks[-1])
+    plaintext = b''.join(blocks)
+    return enc_AES_CBC(plaintext, padding_oracle_key)
+
+def dec_AES_CBC_oracle(ciphertext):
+    plaintext = dec_AES_CBC(ciphertext, padding_oracle_key)
+    try:
+        blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
+        blocks[-1] = pkcs7_rm_padding(blocks[-1])
+        return True
+    except Exception:
+        return False
+
+def change_block(iv, guess, pad_num, index, decrypted):
+    xor_byte = pad_num ^ guess
+    unmod_plus_new_change = iv[:index] + bytes([xor_byte ^ iv[index]])
+    rest = b''.join([bytes([c1^c2^pad_num]) \
+                for c1,c2 in zip(decrypted, iv[::-1])])   
+    return unmod_plus_new_change + rest[::-1]
+
+def padding_oracle_attack(ciphertext):
+    final_decrypted = b''
+    blocks = [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
+    # Decrypt all but the first block, not knowing the IV
+    for i in range(len(blocks)):
+        block = blocks[i]
+        if i != 0:
+            prev_block = blocks[i-1]
+        else:
+            prev_block = bytes(16)
+        decrypted = b''
+        for byte in range(16): # For all bytes in block
+            for guess in range(2, 256): # For every possible guess
+                                        # Don't include 0x1 since 
+                                        # xor'ing the pad_num with
+                                        # the guess would cancel out,
+                                        # leaving only the cipher
+                modified_block = change_block(iv = prev_block, 
+                                              guess = guess,
+                                              pad_num = byte + 1,
+                                              index = 15 - byte,
+                                              decrypted = decrypted)
+                m_blocks = modified_block + block
+                result = dec_AES_CBC_oracle(m_blocks)
+                if result:
+                    decrypted += bytes([guess])
+                    break
+        final_decrypted += decrypted[::-1]
+    return final_decrypted
+
