@@ -4,6 +4,7 @@ import string, sys, math, itertools
 from Crypto.Cipher import AES
 from Crypto import Random
 from random import randint
+import struct
 
 def hex2b(hex):
     return binascii.unhexlify(hex)
@@ -463,3 +464,24 @@ def padding_oracle_attack(ciphertext):
         final_decrypted += decrypted[::-1]
     return final_decrypted
 
+def enc_AES_CTR(plaintext, key, nonce=0):
+    blocks = [plaintext[i:i+16] for i in range(0, len(plaintext), 16)]
+    ciphertext = b''
+    counter = 0
+    for block in blocks:
+        # Combine the little endian unsigned nonce and counter
+        data = struct.pack('<Q', nonce) + struct.pack('<q', counter)
+        ciphertext += fixed_xor(enc_AES_ECB(data, key), block)
+        counter += 1
+    return ciphertext
+
+def dec_AES_CTR(ciphertext, key, nonce=0):
+    blocks = [ciphertext[i:i+16] for i in range(0, len(ciphertext), 16)]
+    plaintext = b''
+    counter = 0
+    for block in blocks:
+        # Combine the little endian unsigned nonce and counter
+        data = struct.pack('<Q', nonce) + struct.pack('<q', counter)
+        plaintext += fixed_xor(enc_AES_ECB(data, key), block)
+        counter += 1
+    return plaintext

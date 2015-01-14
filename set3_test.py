@@ -23,5 +23,16 @@ def c17():
     assert(result == plaintext)
     print("C17 passed!\n")
 
+def c18():
+    str = "L77na/nrFsKvynd6HzOoG7GHTLXsTVu9qvY/2syLXzhPweyyMTJULu/6/kXX0KSvoOLSFQ=="
+    input = hex2b(b642hex(str))
+    output = b"Yo, VIP Let's kick it Ice, Ice, baby Ice, Ice, baby "
+    key = b"YELLOW SUBMARINE"
+    plaintext = dec_AES_CTR(input, key)
+    assert(output == plaintext)
+    assert(enc_AES_CTR(plaintext, key) == input)
+    print("C18 passed!\n")
+
 if __name__ == '__main__':
     c17()
+    c18()
