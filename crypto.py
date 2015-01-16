@@ -23,61 +23,159 @@ def b642hex(b64):
 def fixed_xor(b_str1, b_str2):
     return bytes([x ^ y for x,y in zip(b_str1, b_str2)])
 
-def get_freq(letter):
-    letter_freqs = {
-        'E': .1202,
-        'T': .0910,
-        'A': .0812,
-        'O': .0768,
-        'I': .0731,
-        'N': .0695,
-        'S': .0628,
-        'R': .0602,
-        'H': .0592,
-        'D': .0432,
-        'L': .0398,
-        'U': .0288,
-        'C': .0271,
-        'M': .0261,
-        'F': .0230,
-        'Y': .0211,
-        'W': .0209,
-        'G': .0203,
-        'P': .0182,
-        'B': .0149,
-        'V': .0111,
-        'K': .0069,
-        'X': .0017,
-        'Q': .0011,
-        'J': .0010,
-        'Z': .0007
+SINGLE_LETTER_FREQS = {
+    'E': .1202,
+    'T': .0910,
+    'A': .0812,
+    'O': .0768,
+    'I': .0731,
+    'N': .0695,
+    'S': .0628,
+    'R': .0602,
+    'H': .0592,
+    'D': .0432,
+    'L': .0398,
+    'U': .0288,
+    'C': .0271,
+    'M': .0261,
+    'F': .0230,
+    'Y': .0211,
+    'W': .0209,
+    'G': .0203,
+    'P': .0182,
+    'B': .0149,
+    'V': .0111,
+    'K': .0069,
+    'X': .0017,
+    'Q': .0011,
+    'J': .0010,
+    'Z': .0007
     }
-    return letter_freqs[letter]
+
+BIGRAM_FREQS = {
+    'th': .152,
+    'he': .128,
+    'in': .094,
+    'er': .094,
+    'an': .082,
+    're': .068,
+    'nd': .063,
+    'at': .059,
+    'on': .057,
+    'nt': .056,
+    'ha': .056,
+    'es': .056,
+    'st': .055,
+    'en': .055,
+    'ed': .053,
+    'to': .052,
+    'it': .050,
+    'ou': .050,
+    'ea': .047,
+    'hi': .046,
+    'is': .046,
+    'or': .043,
+    'ti': .034,
+    'as': .033,
+    'te': .027,
+    'et': .019,  
+    'ng': .018,
+    'of': .016,
+    'al': .009,
+    'de': .009,
+    'se': .008,
+    'le': .008,
+    'sa': .006,
+    'si': .005,
+    'ar': .004,
+    've': .004,
+    'ra': .004,
+    'ld': .002,   
+    'ur': .002
+    }   
+
+TRIGRAM_FREQS = {
+    'the': .03508232,
+    'and': .01593878,
+    'ing': .01147042,
+    'her': .00822444,
+    'hat': .00650715,
+    'his': .00596748,
+    'tha': .00593593,
+    'ere': .00560594,
+    'for': .00555372,
+    'ent': .00530771,
+    'ion': .00506454,
+    'ter': .00461099,
+    'was': .00460487,
+    'you': .00437213,
+    'ith': .00431250,
+    'ver': .00430732,
+    'all': .00422758,
+    'wit': .00397290,
+    'thi': .00394796,
+    'tio': .00378058
+    }
+
+QUADGRAM_FREQS = {
+    'that': .00761242,
+    'ther': .00604501,
+    'with': .00573866,
+    'tion': .00551919,
+    'here': .00374549,
+    'ould': .00369920,
+    'ight': .00309440,
+    'have': .00290544,
+    'hich': .00284292,
+    'whic': .00283826,
+    'this': .00276333,
+    'thin': .00270413,
+    'they': .00262421,
+    'atio': .00262386,
+    'ever': .00260695,
+    'from': .00258580,
+    'ough': .00253447,
+    'were': .00231089,
+    'hing': .00229944,
+    'ment': .00223347
+    }
 
 def score(i):
+    def toChar(p):
+        return ''.join(list(map(chr, p)))
+
     tot_score = 0
     input = i.upper()
-    tot_score = sum(
-        abs((float(input.count(c.encode()) / len(input))) - get_freq(c)) 
-        for c in string.ascii_uppercase)
-    
-    percent_letters = \
-        len([x for x in input if 
-            ord('A') <= x <= ord('Z') or x == ord(' ')])
-    
-    return (1 - tot_score) + float(percent_letters / len(input))
+    single_score = sum([SINGLE_LETTER_FREQS[chr(c)] \
+            for c in input if chr(c) in SINGLE_LETTER_FREQS])
+
+    input = i.lower()
+    pairs = [input[i:i+2] for i in range(0, len(input)-1)]
+    bigram_score = sum([BIGRAM_FREQS[toChar(p)] \
+            for p in pairs if toChar(p) in BIGRAM_FREQS])
+
+    trios = [input[i:i+3] for i in range(0, len(input)-2)]
+    trigram_score = sum([TRIGRAM_FREQS[toChar(t)] \
+            for t in trios if toChar(t) in TRIGRAM_FREQS])
+
+    quads = [input[i:i+4] for i in range(0, len(input)-3)]
+    quadgram_score = sum([QUADGRAM_FREQS[toChar(q)] \
+            for q in quads if toChar(q) in QUADGRAM_FREQS])
+
+    return single_score + bigram_score + trigram_score + quadgram_score \
+             - float(input.count(b'\x00') / len(input))
 
 def byte_xor_cipher_with_key(b_str):
-    max_score = 0
+    max_score = -1
     message = ''
-    key = ''
+    key = b''
     for c in range(256):
-        xor_str = chr(c).encode('utf8') * len(b_str)
+        xor_str = bytes([c]) * len(b_str)
         dec = fixed_xor(b_str, xor_str)
         if score(dec) > max_score:
             max_score = score(dec)
             message = dec
-            key = chr(c)
+            key = bytes([c])
     return (message, key)
 
 def byte_xor_cipher(b_str):
@@ -110,7 +208,7 @@ def find_repeating_xor_key(b_str):
     keysize = ([w for w in sorted(mapping, key = mapping.get)][0])
     chunks = [b_str[i:i+keysize] for i in range(0, len(b_str), keysize)]
 
-    final_key = ''
+    final_key = b''
     for i in range(len(max(chunks, key=len))):
         block = bytes([ch[i] for ch in chunks if i < len(ch)])
         final_key += byte_xor_cipher_with_key(block)[1]
@@ -485,3 +583,17 @@ def dec_AES_CTR(ciphertext, key, nonce=0):
         plaintext += fixed_xor(enc_AES_ECB(data, key), block)
         counter += 1
     return plaintext
+
+def break_fixed_nonce_CTR(ciphertexts):
+    keysize = len(min(ciphertexts, key=len))
+    b_str = b''.join(c[:keysize] for c in ciphertexts)
+    chunks = [b_str[i:i+keysize] \
+            for i in range(0, len(b_str), keysize)]
+
+    final_key = b''
+    for i in range(len(max(chunks, key=len))):
+        block = bytes([ch[i] for ch in chunks if i < len(ch)])
+        final_key += byte_xor_cipher_with_key(block)[1]
+    for cipher in ciphertexts:
+        print(fixed_xor(cipher[:keysize], final_key))
+

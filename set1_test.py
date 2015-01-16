@@ -27,7 +27,7 @@ def c4():
     output = "Now that the party is jumping\n"
 
     xor_enc_s = detect_xor(input)
-    c4_output = byte_xor_cipher(hex2b(xor_enc_s)).decode()    
+    c4_output = byte_xor_cipher(hex2b(xor_enc_s)).decode()   
     assert(output == c4_output)
     print("C4 passed!\n")
 
@@ -44,7 +44,7 @@ def c6():
     with open('texts/c6text.txt', 'r') as file:
         data = file.read()
     input = hex2b(b642hex(data))
-    output = "Terminator X: Bring the noise"    
+    output = b"Terminator X: Bring the noise"    
     
     c6_output = find_repeating_xor_key(input)
     assert(output == c6_output)    

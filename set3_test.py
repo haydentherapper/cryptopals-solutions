@@ -33,6 +33,15 @@ def c18():
     assert(enc_AES_CTR(plaintext, key) == input)
     print("C18 passed!\n")
 
+def c19():
+    input = [hex2b(b642hex(line.strip())) \
+                for line in open('texts/c20text.txt', 'r')]
+    print(b'\n'.join(input).decode())
+    key = gen_AES_key()
+    input = list(map(lambda x: enc_AES_CTR(x, key), input))
+    break_fixed_nonce_CTR(input)
+
 if __name__ == '__main__':
     c17()
     c18()
+    c19()
