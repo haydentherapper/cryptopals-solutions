@@ -35,13 +35,29 @@ def c18():
 
 def c19():
     input = [hex2b(b642hex(line.strip())) \
+                for line in open('texts/c19text.txt', 'r')]
+    key = gen_AES_key()
+    input = list(map(lambda x: enc_AES_CTR(x, key), input))
+    print('Decrypting c19...')
+    output = break_fixed_nonce_CTR(input)
+    for text in output:
+        print(text)
+    print("C19 passed! (May need to tweak some decryptions)\n")
+
+def c20():
+    input = [hex2b(b642hex(line.strip())) \
                 for line in open('texts/c20text.txt', 'r')]
-    print(b'\n'.join(input).decode())
     key = gen_AES_key()
     input = list(map(lambda x: enc_AES_CTR(x, key), input))
     break_fixed_nonce_CTR(input)
+    print('Decrypting c20...')
+    output = break_fixed_nonce_CTR(input)
+    for text in output:
+        print(text)
+    print("C20 passed! (May need to tweak some decryptions)\n")
 
 if __name__ == '__main__':
     c17()
     c18()
     c19()
+    c20()

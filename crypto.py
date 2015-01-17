@@ -24,32 +24,32 @@ def fixed_xor(b_str1, b_str2):
     return bytes([x ^ y for x,y in zip(b_str1, b_str2)])
 
 SINGLE_LETTER_FREQS = {
-    'E': .1202,
-    'T': .0910,
-    'A': .0812,
-    'O': .0768,
-    'I': .0731,
-    'N': .0695,
-    'S': .0628,
-    'R': .0602,
-    'H': .0592,
-    'D': .0432,
-    'L': .0398,
-    'U': .0288,
-    'C': .0271,
-    'M': .0261,
-    'F': .0230,
-    'Y': .0211,
-    'W': .0209,
-    'G': .0203,
-    'P': .0182,
-    'B': .0149,
-    'V': .0111,
-    'K': .0069,
-    'X': .0017,
-    'Q': .0011,
-    'J': .0010,
-    'Z': .0007
+    'e': .1202,
+    't': .0910,
+    'a': .0812,
+    'o': .0768,
+    'i': .0731,
+    'n': .0695,
+    's': .0628,
+    'r': .0602,
+    'h': .0592,
+    'd': .0432,
+    'l': .0398,
+    'u': .0288,
+    'c': .0271,
+    'm': .0261,
+    'f': .0230,
+    'y': .0211,
+    'w': .0209,
+    'g': .0203,
+    'p': .0182,
+    'b': .0149,
+    'v': .0111,
+    'k': .0069,
+    'x': .0017,
+    'q': .0011,
+    'j': .0010,
+    'z': .0007
     }
 
 BIGRAM_FREQS = {
@@ -145,11 +145,11 @@ def score(i):
         return ''.join(list(map(chr, p)))
 
     tot_score = 0
-    input = i.upper()
+    input = i.lower()
+    
     single_score = sum([SINGLE_LETTER_FREQS[chr(c)] \
             for c in input if chr(c) in SINGLE_LETTER_FREQS])
 
-    input = i.lower()
     pairs = [input[i:i+2] for i in range(0, len(input)-1)]
     bigram_score = sum([BIGRAM_FREQS[toChar(p)] \
             for p in pairs if toChar(p) in BIGRAM_FREQS])
@@ -584,6 +584,7 @@ def dec_AES_CTR(ciphertext, key, nonce=0):
         counter += 1
     return plaintext
 
+# TODO: Do not truncate the texts, attempt to decrypt
 def break_fixed_nonce_CTR(ciphertexts):
     keysize = len(min(ciphertexts, key=len))
     b_str = b''.join(c[:keysize] for c in ciphertexts)
@@ -594,6 +595,5 @@ def break_fixed_nonce_CTR(ciphertexts):
     for i in range(len(max(chunks, key=len))):
         block = bytes([ch[i] for ch in chunks if i < len(ch)])
         final_key += byte_xor_cipher_with_key(block)[1]
-    for cipher in ciphertexts:
-        print(fixed_xor(cipher[:keysize], final_key))
-
+    return [fixed_xor(cipher[:keysize], final_key).decode() \
+                for cipher in ciphertexts]
