@@ -6,6 +6,8 @@ from Crypto import Random
 from random import randint
 import struct
 
+import mt19937, time
+
 def hex2b(hex):
     return binascii.unhexlify(hex)
     
@@ -585,6 +587,7 @@ def dec_AES_CTR(ciphertext, key, nonce=0):
     return plaintext
 
 # TODO: Do not truncate the texts, attempt to decrypt
+# Having trouble with punctuation, need frequencies
 def break_fixed_nonce_CTR(ciphertexts):
     keysize = len(min(ciphertexts, key=len))
     b_str = b''.join(c[:keysize] for c in ciphertexts)
@@ -597,3 +600,15 @@ def break_fixed_nonce_CTR(ciphertexts):
         final_key += byte_xor_cipher_with_key(block)[1]
     return [fixed_xor(cipher[:keysize], final_key).decode() \
                 for cipher in ciphertexts]
+
+def crack_mt19937_seed(seed):
+    mt19937.init_generator(seed)
+    target = mt19937.int32()
+
+    now = int(time.time())
+    i = 0
+    while(True):
+        mt19937.init_generator(now - i)
+        if (mt19937.int32() == target):
+            return (now - i)
+        i += 1

@@ -1,5 +1,6 @@
 from crypto import *
-import random
+import mt19937
+import random, time
 
 def c17():
     strings = """MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=
@@ -56,8 +57,30 @@ def c20():
         print(text)
     print("C20 passed! (May need to tweak some decryptions)\n")
 
+def c21():
+    seed = 1000
+    mt19937.init_generator(seed)
+    i = mt19937.int32()
+    j = mt19937.int32()
+
+    mt19937.init_generator(seed)
+    assert(mt19937.int32() == i)
+    assert(mt19937.int32() == j)
+    print("C21 passed!\n")
+
+def c22():
+    now = int(time.time())
+    seed = now - random.randint(40, 10000)
+    print("Attempting to crack PRNG seeded with time...")
+    result = crack_mt19937_seed(seed)
+    assert(seed == result)
+    print("The seed was: " + str(result))
+    print("C22 passed!\n")
+
 if __name__ == '__main__':
     c17()
     c18()
     c19()
     c20()
+    c21()
+    c22()

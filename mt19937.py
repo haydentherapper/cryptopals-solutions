@@ -15,7 +15,7 @@ def init_generator(seed):
 		mt[i] = (0x6c078965 * (mt[i-1] ^ (mt[i-1] >> 30)) + i)
 		mt[i] &= 0xffffffff # Lowest 32 bits
 
-def extract_number():
+def int32():
 	global index,mt
 
 	if index == 0:
