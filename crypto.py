@@ -640,3 +640,14 @@ def crack_mt19937_seed_cipher(ciphertext):
         enc_pt = stream_cipher_mt19937(plaintext, i)
         if ciphertext[-14:] == enc_pt[-14:]:
             return i
+
+# Assumes the newtext is no longer than the ciphertext
+# Hides key from user
+def edit(ciphertext, key, offset, newtext):
+    pt = dec_AES_CTR(ciphertext, key) # Properly, should do block length slices
+    new_pt = pt[:offset] + newtext + pt[offset+len(newtext):]
+    return enc_AES_CTR(new_pt, key)
+
+
+
+
