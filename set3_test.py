@@ -83,6 +83,17 @@ def c23():
    assert(target_values == new_target_values)
    print("C23 passed!\n")
 
+# TODO: Add function to test for PRNG seeded with time
+def c24():
+    seed = random.randint(0, 0xffff)
+    assert(stream_cipher_mt19937(stream_cipher_mt19937(b'asdfasdf', seed), seed))
+    plaintext = b'A' * 14
+    random_text = bytes([random.randint(0, 255) for _ in range(random.randint(10,50))])
+    ciphertext = stream_cipher_mt19937(random_text + plaintext, seed)
+    print("Attempting to crack seed for keystream from PRNG...")
+    cracked_seed = crack_mt19937_seed_cipher(ciphertext)
+    assert(seed == cracked_seed)
+    print("C24 passed!\n")
 
 if __name__ == '__main__':
     c17()
@@ -92,3 +103,4 @@ if __name__ == '__main__':
     c21()
     c22()
     c23()
+    c24()

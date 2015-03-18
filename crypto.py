@@ -625,3 +625,18 @@ def clone_mt19937(seed):
     new_target_values = [mt19937.int32_no_gen() for i in range(624)]
     # PRNG is now cloned and can predict values
     return target_values, new_target_values
+
+def stream_cipher_mt19937(plaintext, seed):
+    mt19937.init_generator(seed)
+    ciphertext = b''
+    for p in plaintext:
+        c = p ^ (mt19937.int32() & 0xff)
+        ciphertext += bytes([c])
+    return ciphertext
+
+def crack_mt19937_seed_cipher(ciphertext):
+    plaintext = b'A' * len(ciphertext)
+    for i in range(0xffff):
+        enc_pt = stream_cipher_mt19937(plaintext, i)
+        if ciphertext[-14:] == enc_pt[-14:]:
+            return i
