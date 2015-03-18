@@ -77,6 +77,13 @@ def c22():
     print("The seed was: " + str(result))
     print("C22 passed!\n")
 
+def c23():
+   seed = random.randint(0, 100000)
+   target_values, new_target_values = clone_mt19937(seed)
+   assert(target_values == new_target_values)
+   print("C23 passed!\n")
+
+
 if __name__ == '__main__':
     c17()
     c18()
@@ -84,3 +91,4 @@ if __name__ == '__main__':
     c20()
     c21()
     c22()
+    c23()

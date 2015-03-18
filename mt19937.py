@@ -31,6 +31,20 @@ def int32():
 	index = (index + 1) % N
 	return y
 
+# For C23
+def int32_no_gen():
+	global index,mt
+
+	# Tempering
+	y = mt[index]
+	y ^= (y >> 11)
+	y ^= (y << 7) & 0x9d2c5680
+	y ^= (y << 15) & 0xefc60000
+	y ^= (y >> 18)
+
+	index = (index + 1) % N
+	return y
+
 def generate_numbers():
 	global index,mt
 
@@ -46,3 +60,48 @@ def generate_numbers():
 	mt[N-1] = mt[M-1] ^ (y >> 1) ^ ((y & 1) * 0x9908b0df)
 
 	index = 0
+
+# From https://jazzy.id.au/2010/09/22/cracking_random_number_generators_part_3.html
+def undoRightBitShiftXor(value, shift):
+	i = 0
+	result = 0
+	# Iterate until we've done the full 32 bits
+	while i * shift < 32:
+		# Create a mask for this part
+		partMask = logical_shift(-1 << (32 - shift), shift * i)
+		# Obtain the part
+		part = value & partMask
+		# Unapply the xor from the next part of the integer
+		value ^= logical_shift(part, shift)
+		# Add the part to the result
+		result |= part
+		i += 1
+	return result
+
+# From https://jazzy.id.au/2010/09/22/cracking_random_number_generators_part_3.html
+def undoLeftBitShiftXor(value, shift, mask):
+	i = 0
+	result = 0
+	# Iterate until we've done the full 32 bits
+	while i * shift < 32:
+		# Create a mask for this part
+		partMask = logical_shift(-1, 32 - shift) << (shift * i)
+		# Obtain the part
+		part = value & partMask
+		# Unapply the xor from the next part of the integer
+		value ^= (part << shift) & mask
+		# Add the part to the result
+		result |= part
+		i += 1
+	return result
+
+def untemper(value):
+	value = undoRightBitShiftXor(value, 18)
+	value = undoLeftBitShiftXor(value, 15, 0xefc60000)
+	value = undoLeftBitShiftXor(value, 7, 0x9d2c5680)
+	value = undoRightBitShiftXor(value, 11)
+	return value
+
+# Helper function for right shift
+def logical_shift(val, n): 
+	return val >> n if val >= 0 else (val + 0x100000000) >> n

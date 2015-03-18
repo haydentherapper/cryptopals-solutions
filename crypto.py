@@ -612,3 +612,16 @@ def crack_mt19937_seed(seed):
         if (mt19937.int32() == target):
             return (now - i)
         i += 1
+
+def clone_mt19937(seed):
+    mt19937.init_generator(seed)
+    # Generate 624 values, primed from generate_numbers()
+    target_values = [mt19937.int32() for i in range(624)]
+    # Untemper all values, creating the intermediate mt array
+    untempered_values = list(map(mt19937.untemper, target_values))
+    # Splice the mt array in
+    mt19937.mt = untempered_values
+    # Do not regenerate the internal state, simply get 624 values
+    new_target_values = [mt19937.int32_no_gen() for i in range(624)]
+    # PRNG is now cloned and can predict values
+    return target_values, new_target_values
