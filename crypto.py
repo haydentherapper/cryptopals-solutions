@@ -6,7 +6,7 @@ from Crypto import Random
 from random import randint
 import struct
 
-import mt19937, time
+import mt19937, time, sha1py
 
 def hex2b(hex):
     return binascii.unhexlify(hex)
@@ -714,7 +714,10 @@ def recover_iv_key_cbc(plaintext, key):
         p3_prime = revealed_pt[32:48]
         return fixed_xor(p1_prime, p3_prime)
 
+def sha1_mac(key, message):
+    return sha1py.sha1(key + message)
 
+    
 
 
 

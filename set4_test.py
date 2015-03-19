@@ -34,7 +34,22 @@ def c27():
     assert(key == recovered_key)
     print("C27 passed!\n")
 
+def c28():
+    message = b'I love cryptography'
+    key = gen_AES_key()
+    mac = sha1_mac(key, message)
+    assert(mac.digest() == sha1_mac(key, message).digest())
+    assert(mac.hexdigest() == sha1_mac(key, message).hexdigest())
+    other_message = b'I don"t love cryptography which is a lie'
+    assert(mac.digest() != sha1_mac(key, other_message).digest())
+    assert(mac.hexdigest() != sha1_mac(key, other_message).hexdigest())
+    other_key = gen_AES_key()
+    assert(mac.digest() != sha1_mac(other_key, message).digest())
+    assert(mac.hexdigest() != sha1_mac(other_key, message).hexdigest())
+    print("C28 passed!\n")
+
 if __name__ == '__main__':
     c25()
     c26()
     c27()
+    c28()
