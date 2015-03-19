@@ -684,4 +684,40 @@ def ctr_bitflip(injection_string):
     ciphertext = bytes(ciphertext)
     return (ciphertext, key)
 
+def verify_ascii_compliance(plaintext):
+    for p in plaintext:
+        if p >= 128:
+            return False, plaintext
+    return True, ''
+
+# Recovers the key from a CBC encryption assuming IV=key
+def recover_iv_key_cbc(plaintext, key):
+    # First, IV = key. We also know the following:
+    # C1 = enc(P1 xor IV), C2 = enc(P2 xor C1), C3 = enc(P3 xor C2)
+    # P1 = dec(C1) xor IV, P2 = dec(C2) xor C1, P3 = dec(C3) xor C2
+    # When we modify the ciphertext, we set C3 = C1 and C2 = \x00
+    # Therefore, when decrypted:
+    # P1' = dec(C1) xor IV = P1 xor IV xor IV = P1
+    # P2' = dec(C2) xor C1 = dec(0) xor C1
+    # P3' = dec(C3) xor C2 = dec(C1) xor 0 = P1 xor IV
+    # Therefore, P1' xor P3' = P1 xor P1 xor IV = IV = key
+    ciphertext = enc_AES_CBC(plaintext, key, iv=key)
+    # Attacker now modifies the ciphertext
+    ciphertext = ciphertext[:16] + (b'\x00' * 16) + ciphertext[:16]
+    # Server now decrypts
+    dec_pt = dec_AES_CBC(ciphertext, key, iv=key)
+    # Servers checks if plaintext is compliant
+    good, revealed_pt = verify_ascii_compliance(dec_pt)
+    # Non-compliant plaintext reveals the decrypted plaintext
+    if not good:
+        p1_prime = revealed_pt[:16]
+        p3_prime = revealed_pt[32:48]
+        return fixed_xor(p1_prime, p3_prime)
+
+
+
+
+
+
+
 

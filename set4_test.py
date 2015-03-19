@@ -27,6 +27,14 @@ def c26():
     assert(result)
     print("C26 passed!\n")
 
+def c27():
+    plaintext = (b'A' * 16) + (b'\xff' * 16) + (b'A' * 16)
+    key = gen_AES_key()
+    recovered_key = recover_iv_key_cbc(plaintext, key)
+    assert(key == recovered_key)
+    print("C27 passed!\n")
+
 if __name__ == '__main__':
     c25()
     c26()
+    c27()
