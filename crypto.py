@@ -648,6 +648,40 @@ def edit(ciphertext, key, offset, newtext):
     new_pt = pt[:offset] + newtext + pt[offset+len(newtext):]
     return enc_AES_CTR(new_pt, key)
 
+def take_userdata_ctr(input):
+    input = input.replace(';', '').replace('=', '')
+    input = ("comment1=cooking%20MCs;userdata=" + \
+            input + \
+            ";comment2=%20like%20a%20pound%20of%20bacon").encode()
+    key = gen_AES_key()
 
+    return (dec_AES_CTR(input, key), key)
+
+def dec_userdata_ctr(input, key):
+    pt = dec_AES_CTR(input, key).decode(encoding='ISO-8859-1')
+    mapping = dict([i.split("=") if i.count('=') > 0 else [i, ''] 
+                    for i in pt.split(";")])
+    return 'admin' in mapping and mapping['admin'] == 'true'
+
+def ctr_bitflip(injection_string):
+    # Output will contain "admin=true;" in first block
+    some_output = "comment1=cooking%20MCs;userdata=".encode()
+    ciphertext, key = take_userdata_ctr('')
+    ciphertext = bytearray(ciphertext) # To make it mutable
+
+    # For any byte in the ith cipherblock, one can change a byte in
+    # the ith cipherblock at the same index. 
+    # plaintext[i] = X
+    # ciphertext[i] = Y
+    # desired_chr = Z
+    # We know when decrypted, the byte will be X. Therefore, we XOR
+    # to the ciphertext X to make this byte 0. We then XOR the
+    # desired_chr Z, so Y = Y ^ X ^ Z, which results in Z when decrypted.
+    for i, ch in enumerate(injection_string):
+        ciphertext[i] = ciphertext[i] ^ \
+                        some_output[i] ^ \
+                        injection_string[i]
+    ciphertext = bytes(ciphertext)
+    return (ciphertext, key)
 
 

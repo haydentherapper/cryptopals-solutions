@@ -20,7 +20,12 @@ def c25():
     print("C25 passed!\n")
 
 def c26():
-    pass
+    injection_string = "admin=true;".encode()
+    ciphertext, key = ctr_bitflip(injection_string)
+    result = dec_userdata_ctr(ciphertext, key)
+    print("Confirming \"admin=true\" is in the plaintext")
+    assert(result)
+    print("C26 passed!\n")
 
 if __name__ == '__main__':
     c25()
