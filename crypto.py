@@ -714,13 +714,27 @@ def recover_iv_key_cbc(plaintext, key):
         p3_prime = revealed_pt[32:48]
         return fixed_xor(p1_prime, p3_prime)
 
+# Key is not revealed to user
 def sha1_mac(key, message):
     return sha1py.sha1(key + message)
 
-    
+def create_MD_padding(message):
+    length = bin(len(message) * 8)[2:].rjust(64, '0')
+    while(len(message) > 64):
+        message = message[64:]
+    pad = '1' # Pad with 1
+    # If we have room for the length...
+    length_final_block = (len(message) * 8) + 1
+    if 512 - length_final_block >= 64:
+        pad += '0' * (512 - length_final_block - len(length))
+        pad += length
+        return pad
+    # Else, append zeros to pad into a second block, then append length
+    else:
+        pad += '0' * (1024 - length_final_block - len(length))
+        pad += length
+        return pad
 
-
-
-
-
-
+def bin_to_hex(pad):
+    return bytes(list(map(lambda x: int(x, 2), \
+                          [pad[i:i+8] for i in range(0, len(pad), 8)])))

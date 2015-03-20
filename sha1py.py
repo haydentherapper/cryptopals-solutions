@@ -18,13 +18,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# Modifications include the addition of internal state changing
 class SHA1 (object):
 
     _h0, _h1, _h2, _h3, _h4, = (
         0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0)
 
-    def __init__(self, message):
-        length = bin(len(message) * 8)[2:].rjust(64, "0")
+    def __init__(self, message, state=None):
+        if state is not None:
+            self._setRegisters(state[0])
+        # length must include the previous message+pad length
+        extra_len = state[1] if state is not None else 0
+        length = bin(len(message) * 8 + extra_len * 8)[2:].rjust(64, "0")
         while len(message) > 64:
             self._handle(''.join(bin(i)[2:].rjust(8, "0")
                 for i in message[:64]))
@@ -33,6 +38,16 @@ class SHA1 (object):
         message += "0" * ((448 - len(message) % 512) % 512) + length
         for i in range(len(message) // 512):
             self._handle(message[i * 512:i * 512 + 512])
+
+    def _setRegisters(self, state):
+        registers = [state[i:i+8] for i in range(0, len(state), 8)]
+        registers = map(lambda x: int(x, 16), registers)
+        a,b,c,d,e = registers
+        self._h0 = a
+        self._h1 = b
+        self._h2 = c
+        self._h3 = d
+        self._h4 = e
 
     def _handle(self, chunk):
 
@@ -84,14 +99,12 @@ class SHA1 (object):
         return bytes(int(hexdigest[i * 2:i * 2 + 2], 16)
             for i in range(len(hexdigest) // 2))
 
-def new(algorithm, message):
+def new(algorithm, message, state=None):
     obj = {
         'sha1': SHA1,
-    }[algorithm](message)
+    }[algorithm](message, state=state)
     return obj
 
-def sha1(message):
+def sha1(message, state=None):
     ''' Returns a new sha1 hash object '''
-    return new('sha1', message)
-
-
+    return new('sha1', message, state=state)
