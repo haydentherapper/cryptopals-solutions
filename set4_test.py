@@ -92,6 +92,36 @@ def c30():
     assert(our_mac == server_side_mac)
     print("C30 passed!\n")
 
+def c31():
+    # Key is hidden
+    key = gen_AES_key()
+    fileName = b'foobar'
+    target_mac = hmac_sha1(key, fileName).digest()
+    print("Target HMAC:", target_mac)
+    print("Bruteforcing HMAC through timing attack...")
+    mac = target_mac[:-2]
+    found_mac = False
+    while not found_mac:
+        # Server query
+        best_time = 0
+        best_char = None
+        for i in range(256):
+            start = time.time()
+            result = verify_mac(key, fileName, mac + bytes([i]))
+            end = time.time()
+            if result == 200:
+                best_char = i
+                found_mac = True
+                break
+            elif end - start > best_time:
+                best_time = end - start
+                best_char = i
+        mac += bytes([best_char])
+        print("HMAC so far:", mac)
+    print("Bruteforced HMAC:", mac)
+    assert(mac == target_mac)
+    print("C31 passed!\n")
+
 if __name__ == '__main__':
     c25()
     c26()
@@ -99,3 +129,4 @@ if __name__ == '__main__':
     c28()
     c29()
     c30()
+    c31()
