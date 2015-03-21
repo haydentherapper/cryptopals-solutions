@@ -6,7 +6,7 @@ from Crypto import Random
 from random import randint
 import struct
 
-import mt19937, time, sha1py
+import mt19937, time, sha1py, md4py
 
 def hex2b(hex):
     return binascii.unhexlify(hex)
@@ -718,23 +718,30 @@ def recover_iv_key_cbc(plaintext, key):
 def sha1_mac(key, message):
     return sha1py.sha1(key + message)
 
-def create_MD_padding(message):
-    length = bin(len(message) * 8)[2:].rjust(64, '0')
+def create_MD_padding(message, length_endian):
+    def bin_to_hex(pad):
+        return bytes(list(map(lambda x: int(x, 2), \
+                              [pad[i:i+8] for i in range(0, len(pad), 8)])))
+    endian = '>Q' if length_endian == 'big' else '<Q'
+    length = struct.pack(endian, len(message) * 8)
     while(len(message) > 64):
         message = message[64:]
-    pad = '1' # Pad with 1
     # If we have room for the length...
-    length_final_block = (len(message) * 8) + 1
+    length_final_block = (len(message) * 8) + 1 # Include '1' bit
     if 512 - length_final_block >= 64:
-        pad += '0' * (512 - length_final_block - len(length))
+        pad = bin_to_hex('1' + '0' * (512 - length_final_block - len(length) * 8))
         pad += length
         return pad
     # Else, append zeros to pad into a second block, then append length
     else:
-        pad += '0' * (1024 - length_final_block - len(length))
+        pad = bin_to_hex('1' + '0' * (1024 - length_final_block - len(length) * 8))
         pad += length
         return pad
 
-def bin_to_hex(pad):
-    return bytes(list(map(lambda x: int(x, 2), \
-                          [pad[i:i+8] for i in range(0, len(pad), 8)])))
+def hexdigest(hash):
+    return ''.join(hex(i)[2:].rjust(2, '0') for i in hash)
+
+def md4_mac(key, message):
+    return bytes(md4py.MD4(key + message))
+
+
