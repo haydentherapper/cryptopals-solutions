@@ -740,7 +740,7 @@ def create_MD_padding(message, length_endian):
         return pad
 
 def hexdigest(hash):
-    return ''.join(hex(i)[2:].rjust(2, '0') for i in hash)
+    return binascii.hexlify(hash)
 
 def md4_mac(key, message):
     return bytes(md4py.MD4(key + message))

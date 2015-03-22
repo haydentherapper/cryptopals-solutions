@@ -1,7 +1,7 @@
 from crypto import *
 from sha1py import *
 from md4py import *
-import random
+import random, requests
 
 def c25():
     with open('texts/c25text.txt', 'r') as file:
@@ -93,23 +93,20 @@ def c30():
     print("C30 passed!\n")
 
 def c31():
-    # Key is hidden
-    key = gen_AES_key()
     fileName = b'foobar'
-    target_mac = hmac_sha1(key, fileName).digest()
-    print("Target HMAC:", target_mac)
     print("Bruteforcing HMAC through timing attack...")
-    mac = target_mac[:-2]
+    mac = b''
     found_mac = False
+    url = 'http://localhost:5000/test'
     while not found_mac:
-        # Server query
         best_time = 0
         best_char = None
         for i in range(256):
+            payload = {'file': fileName.decode(), 'signature': hexdigest(mac + bytes([i]))}
             start = time.time()
-            result = verify_mac(key, fileName, mac + bytes([i]))
+            r = requests.get(url, params=payload)
             end = time.time()
-            if result == 200:
+            if r.status_code == 200:
                 best_char = i
                 found_mac = True
                 break
@@ -117,10 +114,39 @@ def c31():
                 best_time = end - start
                 best_char = i
         mac += bytes([best_char])
-        print("HMAC so far:", mac)
-    print("Bruteforced HMAC:", mac)
-    assert(mac == target_mac)
+        print("HMAC so far:", hexdigest(mac))
+    print("Bruteforced HMAC:", hexdigest(mac))
     print("C31 passed!\n")
+
+def c32():
+    print("Bruteforcing HMAC through harder timing attack...")
+    print("This will take a VERY long time!")
+    fileName = b'foobar'
+    mac = b''
+    found_mac = False
+    url = 'http://localhost:5000/test'
+    while not found_mac:
+        best = {} # Maps char to time
+        for i in range(256):
+            total_time = 0 # Try for some number of times
+            payload = {'file': fileName.decode(), 'signature': hexdigest(mac + bytes([i]))}
+            for _ in range(10):
+                start = time.time()
+                r = requests.get(url, params=payload)
+                end = time.time()
+                if r.status_code == 200:
+                    best[i] = 10000 # Large value = max time
+                    found_mac = True
+                    break
+                else:
+                    if i in best:
+                        best[i] += (end - start) / 10
+                    else:
+                        best[i] = (end - start) / 10
+        mac += bytes([max(best, key=best.get)])
+        print("HMAC so far:", hexdigest(mac))
+    print("Bruteforced HMAC:", hexdigest(mac))
+    print("C32 passed!\n")
 
 if __name__ == '__main__':
     c25()
@@ -130,3 +156,4 @@ if __name__ == '__main__':
     c29()
     c30()
     c31()
+    c32()
