@@ -215,12 +215,164 @@ def c36():
     print("8. Authenticate by checking that both keys match")
     client_h = HMAC.new(client.K, msg=client.salt, digestmod=SHA256)
     server_h = HMAC.new(server.K, msg=server.salt, digestmod=SHA256)
-    assert(server.K == client.K)
     assert(client_h.hexdigest() == server_h.hexdigest())
     print("C36 passed!\n")
+
+def c37():
+    print("No need for a password with 'A = 0'")
+    g = 2
+    p = int(''.join(
+        """ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024
+        e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd
+        3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec
+        6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f
+        24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361
+        c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552
+        bb9ed529077096966d670c354e4abc9804f1746c08ca237327fff
+        fffffffffffff"""
+        .split()), 16)
+    k = 3
+    I = b'me'
+    password = b'who knows'
+    client = Client(g, p, k, I, password)
+    server = Server(g, p, k, I, password)
+
+    server.gen_salt()
+    server.gen_pass_verifier()
+
+    client.calc_pub_A()
+    # Send fake value for A
+    server.receive_pub_A(0) # client.A = 0
+
+    server.calc_pub_B()
+    client.receive_pub_B_salt(server.B, server.salt)
+
+    client.calc_hash_A_B()
+    server.calc_hash_A_B()
+
+    client.calc_shared_key()
+
+    # We know that A = 0, so S = ((A * k^u) ^ b) % p = 0
+    # Therefore, K = SHA256(S) = SHA256(0)
+    server.calc_shared_key()
+
+    fake_client_h = HMAC.new(SHA256.new(str(0).encode()).digest(), 
+                                msg=client.salt, digestmod=SHA256)
+    server_h = HMAC.new(server.K, msg=server.salt, digestmod=SHA256)
+    assert(fake_client_h.hexdigest() == server_h.hexdigest())
+
+    print("No need for a password with 'A = p' either")
+    client = Client(g, p, k, I, password)
+    server = Server(g, p, k, I, password)
+
+    server.gen_salt()
+    server.gen_pass_verifier()
+
+    client.calc_pub_A()
+    # Send fake value for A
+    server.receive_pub_A(p) # client.A = p
+
+    server.calc_pub_B()
+    client.receive_pub_B_salt(server.B, server.salt)
+
+    client.calc_hash_A_B()
+    server.calc_hash_A_B()
+
+    client.calc_shared_key()
+
+    # We know that A = p, so S = ((p * k^u) ^ b) % p = 0
+    # Therefore, K = SHA256(S) = SHA256(0)
+    server.calc_shared_key()
+
+    fake_client_h = HMAC.new(SHA256.new(str(0).encode()).digest(), 
+                                msg=client.salt, digestmod=SHA256)
+    server_h = HMAC.new(server.K, msg=server.salt, digestmod=SHA256)
+    assert(fake_client_h.hexdigest() == server_h.hexdigest())
+    print("C37 passed!\n")
+
+def c38():
+    print("Run with a simplified client and server first")
+    g = 2
+    p = int(''.join(
+        """ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024
+        e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd
+        3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec
+        6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f
+        24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361
+        c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552
+        bb9ed529077096966d670c354e4abc9804f1746c08ca237327fff
+        fffffffffffff"""
+        .split()), 16)
+    k = 3
+    I = b'me'
+    password = b'letmein'
+    client = SimplifiedClient(g, p, k, I, password)
+    server = SimplifiedServer(g, p, k, I, password)
+
+    server.gen_salt()
+    server.gen_pass_verifier()
+
+    client.calc_pub_A()
+    server.receive_pub_A(client.A) 
+
+    server.calc_pub_B()
+    server.calc_hash()
+    client.receive_pub_B_salt_u(server.B, server.salt, server.u)
+
+    client.calc_shared_key()
+
+    # We know that A = 0, so S = ((A * k^u) ^ b) % p = 0
+    # Therefore, K = SHA256(S) = SHA256(0)
+    server.calc_shared_key()
+
+    client_h = HMAC.new(client.K, msg=client.salt, digestmod=SHA256)
+    server_h = HMAC.new(server.K, msg=server.salt, digestmod=SHA256)
+    assert(client_h.hexdigest() == server_h.hexdigest())
+
+    print("Now, as a middleman, fake server responses to get client's HMAC")
+    client = SimplifiedClient(g, p, k, I, password)
+    fake_server = SimplifiedServer(g, p, k, I, password) # Technically doesn't know password
+
+    fake_server.gen_salt()
+    fake_server.gen_pass_verifier()
+
+    client.calc_pub_A()
+    fake_server.receive_pub_A(client.A)
+
+    fake_server.calc_pub_B()
+    fake_server.calc_hash()
+    client.receive_pub_B_salt_u(fake_server.B, fake_server.salt, fake_server.u)
+
+    client.calc_shared_key()
+    fake_server.calc_shared_key()
+
+    client_h = HMAC.new(client.K, msg=client.salt, digestmod=SHA256)
+    print("Without password verifier, run dictionary attack")
+    # HMAC(K, salt) = HMAC(SHA256(S), salt) = HMAC(SHA256((A * v^u)^b % p), salt)
+    # v = g^x % p = g^(SHA256(salt|password)) % p
+    PASSWORD_LIST = ['123456', 'password', '12345', '12345678', 'qwerty', 
+                        '123456789', '1234', 'baseball', 'dragon', 'football', 
+                        '1234567', 'monkey', 'letmein', 'abc123', '111111', 
+                        'mustang', 'access', 'shadow', 'master', 'michael', 
+                        'superman', '696969', '123123', 'batman', 'trustno1']
+    for password in PASSWORD_LIST:
+        xH = SHA256.new(fake_server.salt + password.encode()).hexdigest()
+        x = int(xH, 16)
+        v = modexp(fake_server.g, x, fake_server.p)
+        v_u = modexp(v, fake_server.u, fake_server.p)
+        S = modexp(fake_server.A * v_u, fake_server.secret_b, fake_server.p)
+        K = SHA256.new(str(S).encode()).digest()
+        server_guess = HMAC.new(K, msg=fake_server.salt, digestmod=SHA256)
+        if server_guess.hexdigest() == client_h.hexdigest():
+            print('Bruteforced password: ' + password)
+            break
+
+    print("C38 passed!\n")
 
 if __name__ == '__main__':
     c33()
     c34()
     c35()
     c36()
+    c37()
+    c38()

@@ -97,6 +97,68 @@ class Server:
         h.update(str(S).encode())
         self.K = h.digest()
 
+class SimplifiedClient:
+    def __init__(self, g, p, k, I, password):
+        self.g = g
+        self.p = p
+        self.k = k
+        self.I = I
+        self.password = password
+        self.secret_a = random.randint(0, p-1)
+
+    def calc_pub_A(self):
+        self.A = modexp(base=self.g, exp=self.secret_a, mod=self.p)
+
+    def receive_pub_B_salt_u(self, B, salt, u):
+        self.B = B
+        self.salt = salt
+        self.u = u
+
+    def calc_shared_key(self):
+        h = SHA256.new()
+        h.update(self.salt+self.password)
+        xH = h.hexdigest()
+        x = int(xH, 16)
+        v = modexp(self.g, x, self.p)
+        S = modexp(self.B, self.secret_a + (self.u*x), self.p)
+        h = SHA256.new()
+        h.update(str(S).encode())
+        self.K = h.digest()
+
+class SimplifiedServer:
+    def __init__(self, g, p, k, I, password):
+        self.g = g
+        self.p = p
+        self.k = k
+        self.I = I
+        self.password = password
+        self.secret_b = random.randint(0, p-1)
+
+    def gen_salt(self):
+        self.salt = Random.new().read(16)
+
+    def gen_pass_verifier(self):
+        h = SHA256.new()
+        h.update(self.salt+self.password)
+        xH = h.hexdigest() # Insecure hashed password
+        x = int(xH, 16)
+        self.v = modexp(self.g, x, self.p) # Password verifier
+
+    def calc_pub_B(self):
+        self.B = modexp(base=self.g, exp=self.secret_b, mod=self.p)
+
+    def receive_pub_A(self, A):
+        self.A = A
+
+    def calc_hash(self):
+        self.u = int.from_bytes(Random.new().read(16), byteorder='big', signed=False)
+
+    def calc_shared_key(self):
+        v_u = modexp(self.v, self.u, self.p)
+        S = modexp(self.A * v_u, self.secret_b, self.p)
+        h = SHA256.new()
+        h.update(str(S).encode())
+        self.K = h.digest()
 
 # Fast Right-to-Left modular exponentiation
 # Runs in O(log(exp))
