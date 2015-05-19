@@ -87,7 +87,7 @@ def c30():
     state = list(map(lambda x: struct.unpack('<I', x)[0], \
         [byte_mac[i:i+4] for i in range(0, len(byte_mac), 4)]))
     # Fix registers based on previous hash, then continue to hash with new block
-    our_mac = hexdigest(MD4(addition, fake_byte_len=len(b'A'*16+new_message), state=state))
+    our_mac = hexdigest(bytes(MD4(addition, fake_byte_len=len(b'A'*16+new_message), state=state)))
     print("Spoofed MAC without access to key:", our_mac)
     assert(our_mac == server_side_mac)
     print("C30 passed!\n")
