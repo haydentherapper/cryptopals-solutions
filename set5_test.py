@@ -1,5 +1,6 @@
 from number_theoretic_crypto import *
 import binascii
+import math
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA, SHA256, HMAC
 from Crypto import Random
@@ -384,6 +385,26 @@ def c39():
     assert(dec_message == message)
     print("C39 passed!\n")
 
+def c40():
+    print("Implementation of E=3 RSA Broadcast attack")
+    message = 42 # Assume message < N_i
+    e1, d1, n1 = rsa_setup()
+    c1 = rsa_encrypt(message, e1, n1)
+    e2, d2, n2 = rsa_setup()
+    c2 = rsa_encrypt(message, e2, n2)
+    e3, d3, n3 = rsa_setup()
+    c3 = rsa_encrypt(message, e3, n3)
+    print("Using Chinese Remainder Theorem, we solve for a common ciphertext C")
+    print("C is congruent to M^e = M^3 mod n1*n2*n3")
+    result = (c1 * (n2*n3) * invmod(n2*n3, n1)) + \
+             (c2 * (n1*n3) * invmod(n1*n3, n2)) + \
+             (c3 * (n1*n2) * invmod(n1*n2, n3)) # Don't take modulu, since M^3 < n1*n2*n3
+    result = result % (n1*n2*n3)
+    # All solutions are congruent to result mod N, so M^3 is congruent to this
+    dec_message = math.ceil(math.pow(result, 1/3))
+    assert(message == dec_message)
+    print("C40 passed!\n")
+
 if __name__ == '__main__':
     c33()
     c34()
@@ -392,3 +413,4 @@ if __name__ == '__main__':
     c37()
     c38()
     c39()
+    c40()
