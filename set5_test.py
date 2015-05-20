@@ -1,4 +1,5 @@
 from number_theoretic_crypto import *
+import binascii
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA, SHA256, HMAC
 from Crypto import Random
@@ -369,6 +370,20 @@ def c38():
 
     print("C38 passed!\n")
 
+def c39():
+    print("Testing RSA...")
+    e, d, n = rsa_setup()
+    message = 42
+    c = rsa_encrypt(message, e, n)
+    dec_message = rsa_decrypt(c, d, n)
+    assert(dec_message == message)
+
+    message = int(binascii.hexlify(b"I love RSA"), 16)
+    c = rsa_encrypt(message, e, n)
+    dec_message = rsa_decrypt(c, d, n)
+    assert(dec_message == message)
+    print("C39 passed!\n")
+
 if __name__ == '__main__':
     c33()
     c34()
@@ -376,3 +391,4 @@ if __name__ == '__main__':
     c36()
     c37()
     c38()
+    c39()
