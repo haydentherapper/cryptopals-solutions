@@ -386,6 +386,12 @@ def c39():
     print("C39 passed!\n")
 
 def c40():
+    # C_i is congruent to M^3 mod N_i
+    # Solving for CRT of all C_i for i=1,2,3, we have one solution, M^3
+    # Another solution is x = sum_i(C_i * N/N_i * invmod(N/N_i, N_i)) mod N
+    # This means all solutions are congruent to x mod N
+    # Therefore, x is congruent to M^3 mod N, but since M < N_i, M^3 < N
+    # Therefore, x = M^3, and taking the real cube root, we solve for M
     print("Implementation of E=3 RSA Broadcast attack")
     message = 42 # Assume message < N_i
     e1, d1, n1 = rsa_setup()
